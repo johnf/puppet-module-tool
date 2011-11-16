@@ -370,4 +370,28 @@ describe "cli" do
     end
   end
 
+  describe "explode" do
+    it "should complain if no Modules file" do
+      run do
+        app.explode
+      end.should =~ /Could not locate Modules/
+    end
+    it "should install all the modules" do
+      run do
+        app.generate(@full_name)
+        app.build(@full_name)
+
+        stub_cache_read File.read("#{@full_name}/pkg/#{@release_name}.tar.gz")
+        FileUtils.rm_rf(@full_name)
+
+        stub_installer_read <<-HERE
+          {"file": "/foo/bar/#{@release_name}.tar.gz", "version": "#{@version}"}
+        HERE
+
+        app.explode
+
+        File.directory?("modules/#@module_name").should == true
+      end.should =~ /Installed #{@release_name.inspect}/
+    end
+  end
 end

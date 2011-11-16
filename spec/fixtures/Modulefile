@@ -1,0 +1,5 @@
+source 'http://forge.puppetlabs.com'
+
+module 'puppet-apt'
+module 'puppet-mysql', '~> 0.3.1'
+

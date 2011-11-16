@@ -113,6 +113,11 @@ class Puppet::Module::Tool::CLI < Thor
     end
   end
 
+  desc "explode", "Install all the modules referenced in the Modules manifest"
+  def explode
+    Puppet::Module::Tool::Applications::Exploder.run(options)
+  end
+
   no_tasks do
     def find_module_root(path)
       for dir in [path, Dir.pwd].compact
