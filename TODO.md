@@ -1,6 +1,16 @@
 TODOs
 =====
 
+Unsorted
+--------
+
+All authenticated requests should support SSL repository URLs
+
+A mechanism to store a token as a "saved" password (or similar approach) would
+be nice
+
+Register module at release
+
 Modules
 -------
 
