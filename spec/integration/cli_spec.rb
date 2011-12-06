@@ -370,12 +370,16 @@ describe "cli" do
     end
   end
 
-  describe "explode" do
+  describe "explode", :cli => 'exploder' do
     it "should complain if no Modules file" do
       run do
         app.explode
       end.should =~ /Could not locate Modules/
     end
+
+    it "should parse a valid modules file" do
+    end
+
     it "should install all the modules" do
       run do
         app.generate(@full_name)
