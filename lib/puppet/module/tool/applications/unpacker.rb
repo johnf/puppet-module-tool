@@ -12,6 +12,7 @@ module Puppet::Module::Tool
         @environment_path = Pathname.new(environment_path)
         parse_filename!
         super(options)
+        @module_dir = File.join(@environment_path, @module_name)
       end
 
       def force?
@@ -20,13 +21,13 @@ module Puppet::Module::Tool
 
       def run
         # Check if the module directory already exists.
-        if File.exist?(@module_name) || File.symlink?(@module_name) then
+        if File.exist?(@module_dir) || File.symlink?(@module_dir) then
           if force? then
-            FileUtils.rm_rf @module_name rescue nil
+            FileUtils.rm_rf @module_dir rescue nil
           else
             check_clobber!
             # JJM 2011-06-20 And remove it anyway (This is a dumb way to do it, but...  it works.)
-            FileUtils.rm_rf @module_name rescue nil
+            FileUtils.rm_rf @module_dir rescue nil
           end
         end
         build_dir = Puppet::Module::Tool::Cache.base_path + "tmp-unpacker-#{Digest::SHA1.hexdigest(@filename.basename.to_s)}"
@@ -41,18 +42,18 @@ module Puppet::Module::Tool
           # grab the first directory
           extracted = build_dir.children.detect { |c| c.directory? }
           # Nothing should exist at this point named @module_name
-          FileUtils.cp_r extracted, @module_name
+          FileUtils.cp_r extracted, @module_dir
           tag_revision
         ensure
           build_dir.rmtree
         end
-        say "Installed #{@release_name.inspect} into directory: #{@module_name}"
+        say "Installed #{@release_name.inspect} into directory: #{@module_name}" unless @options[:quiet]
       end
 
       private
 
       def tag_revision
-        File.open("#{@module_name}/REVISION", 'w') do |f|
+        File.open("#{@module_dir}/REVISION", 'w') do |f|
           f.puts "module: #{@username}/#{@module_name}"
           f.puts "version: #{@version}"
           f.puts "url: file://#{@filename.realpath}"
@@ -61,7 +62,7 @@ module Puppet::Module::Tool
       end
 
       def check_clobber!
-        if (File.exist?(@module_name) || File.symlink?(@module_name)) && !force?
+        if (File.exist?(@module_dir) || File.symlink?(@module_dir)) && !force?
           header "Existing module '#{@module_name}' found"
           response = prompt "Overwrite module installed at ./#{@module_name}? [y/N]"
           unless response =~ /y/i

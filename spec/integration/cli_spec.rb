@@ -287,6 +287,13 @@ describe "cli" do
           {"file": "/foo/bar/#{@release_name}.tar.gz", "version": "#{@version}"}
         HERE
 
+        stub_repository_read 200, <<-HERE
+          [
+            {"full_name": "cli", "version": "1.0"},
+            {"full_name": "web", "version": "2.0"}
+          ]
+        HERE
+
         app.install(@full_name)
 
         File.directory?(@module_name).should == true
@@ -373,30 +380,43 @@ describe "cli" do
   describe "explode", :cli => 'exploder' do
     it "should complain if no Modules file" do
       run do
-        app.explode
+        lambda { app.explode }.should raise_error(SystemExit)
       end.should =~ /Could not locate Modules/
     end
 
+    it "should complain if no modules directory exists" do
+      run do
+        FileUtils.touch 'Modules'
+        lambda { app.explode }.should raise_error(SystemExit)
+      end.should =~ /Could not locate modules directory/
+    end
+
+
+
     it "should parse a valid modules file" do
       run do
+        stub_forge_module 'puppet', 'apt' , '1.0.0'
+        stub_forge_module 'puppet', 'mysql', '1.0.0'
+        FileUtils.mkdir 'modules'
         File.open("Modules", "w") do |handle|
           handle.puts <<-EOF
-            source 'http://forge.puppetlabs.com'
+            source 'http://forge.example.com'
 
             mod 'puppet-apt'
             mod 'puppet-mysql', '~> 0.3.1'
           EOF
         end
         app.explode
-      end.should be_empty
+      end
     end
 
     it "should not allow multiple sources" do
       run do
+        FileUtils.mkdir 'modules'
         File.open("Modules", "w") do |handle|
           handle.puts <<-EOF
-            source 'http://forge.puppetlabs.com'
-            source 'http://superforge.puppetlabs.com'
+            source 'http://forge.example.com'
+            source 'http://superforge.example.com'
           EOF
         end
         lambda { app.explode }.should raise_error(SystemExit)
@@ -411,15 +431,18 @@ describe "cli" do
       Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0').should == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0')
       Puppet::Module::Tool::Dependency.new('puppet-apt', '1.1').should_not == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0')
 
-      Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://forge.puppetlabs.com').should == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://forge.puppetlabs.com')
-      Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://forge.puppetlabs.com').should_not == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://superforge.puppetlabs.com')
+      Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://forge.example.com').should == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://forge.example.com')
+      Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://forge.example.com').should_not == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://superforge.example.com')
     end
 
     it "should allow the same module twice at the same version" do
       run do
+        stub_forge_module 'puppet', 'apt' , '1.0.0'
+        stub_forge_module 'puppet', 'mysql', '1.0.0'
+        FileUtils.mkdir 'modules'
         File.open("Modules", "w") do |handle|
           handle.puts <<-EOF
-            source 'http://forge.puppetlabs.com'
+            source 'http://forge.example.com'
 
             mod 'puppet-apt'
             mod 'puppet-apt'
@@ -428,14 +451,15 @@ describe "cli" do
           EOF
         end
         app.explode
-      end.should be_empty
+      end
     end
 
     it "should not allow the same module twice at the different version" do
       run do
+        FileUtils.mkdir 'modules'
         File.open("Modules", "w") do |handle|
           handle.puts <<-EOF
-            source 'http://forge.puppetlabs.com'
+            source 'http://forge.example.com'
 
             mod 'puppet-apt', '0.5'
             mod 'puppet-apt', '0.6'
@@ -446,22 +470,25 @@ describe "cli" do
     end
 
 
-#    it "should install all the modules" do
-#      run do
-#        app.generate(@full_name)
-#        app.build(@full_name)
-#
-#        stub_cache_read File.read("#{@full_name}/pkg/#{@release_name}.tar.gz")
-#        FileUtils.rm_rf(@full_name)
-#
-#        stub_installer_read <<-HERE
-#          {"file": "/foo/bar/#{@release_name}.tar.gz", "version": "#{@version}"}
-#        HERE
-#
-#        app.explode
-#
-#        File.directory?("modules/#@module_name").should == true
-#      end.should =~ /Installed #{@release_name.inspect}/
-#    end
+    it "should install all the modules" do
+      run do
+        stub_forge_module 'puppetlabs', 'java' , '1.0.0'
+        stub_forge_module 'puppetlabs', 'motd' , '0.3.4'
+        FileUtils.mkdir 'modules'
+        File.open("Modules", "w") do |handle|
+          handle.puts <<-EOF
+            source 'http://forge.example.com'
+
+            mod 'puppetlabs-java'
+            mod 'puppetlabs-motd', '0.3.4'
+          EOF
+        end
+
+        app.explode
+
+        File.directory?("modules/motd").should == true
+        File.directory?("modules/java").should == true
+      end
+    end
   end
 end

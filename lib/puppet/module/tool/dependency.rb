@@ -2,7 +2,7 @@ module Puppet::Module::Tool
 
   class Dependency
 
-    attr_accessor :full_name, :version_requirement, :repository
+    attr_accessor :full_name, :username, :name, :version_requirement, :repository
 
     # Instantiates a new module dependency with a +full_name+ (e.g.
     # "myuser-mymodule"), and optional +version_requirement+ (e.g. "0.0.1") and

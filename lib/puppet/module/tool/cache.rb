@@ -1,3 +1,5 @@
+require 'open-uri'
+
 module Puppet::Module::Tool
 
   # = Cache
@@ -24,7 +26,7 @@ module Puppet::Module::Tool
             FileUtils.cp(uri.path, cached_file)
           else
             # TODO: Handle HTTPS; probably should use repository.contact
-            data = read_retrieve(uri)
+            data = read_retrieve(uri.to_s)
             cached_file.open('wb') { |f| f.write data }
           end
         end
@@ -33,7 +35,7 @@ module Puppet::Module::Tool
 
     # Return contents of file at the given URI's +uri+.
     def read_retrieve(uri)
-      return uri.read
+      return open(uri).read
     end
 
     # Return Pathname for repository's cache directory, create it if needed.

@@ -56,7 +56,7 @@ module Puppet::Module::Tool
     # Return the local file name containing the data downloaded from the
     # repository at +release+ (e.g. "myuser-mymodule").
     def retrieve(release)
-      return cache.retrieve(@uri + release)
+      return cache.retrieve((@uri + release).to_s)
     end
 
     # Return the URI string for this repository.

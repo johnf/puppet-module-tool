@@ -40,10 +40,10 @@ describe Puppet::Module::Tool::Repository do
     describe '#retrieve' do
       before do
         @uri = URI.parse('http://some.url.com')
-        @repository.cache.expects(:retrieve).with(@uri)
+        @repository.cache.expects(:retrieve).with(@uri.to_s)
       end
       it "should access the cache" do
-        @repository.retrieve(@uri)
+        @repository.retrieve(@uri.to_s)
       end
     end
     
