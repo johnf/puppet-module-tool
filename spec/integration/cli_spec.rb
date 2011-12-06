@@ -378,6 +378,18 @@ describe "cli" do
     end
 
     it "should parse a valid modules file" do
+      run do
+        File.open("Modules", "w") do |handle|
+          handle.puts <<-EOF
+            source 'http://forge.puppetlabs.com'
+
+            mod 'puppet-apt'
+            mod 'puppet-mysql', '~> 0.3.1'
+          EOF
+          handle.puts "# Added"
+        end
+        app.explode
+      end.should be_empty
     end
 
     it "should install all the modules" do

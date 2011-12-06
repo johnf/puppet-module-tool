@@ -21,7 +21,6 @@ module Puppet::Module::Tool
         end
 
         modules = Dsl.new(MODULES).evaluate
-        modules.each {|m| puts m }
       end
     end
 
