@@ -386,28 +386,82 @@ describe "cli" do
             mod 'puppet-apt'
             mod 'puppet-mysql', '~> 0.3.1'
           EOF
-          handle.puts "# Added"
         end
         app.explode
       end.should be_empty
     end
 
-    it "should install all the modules" do
+    it "should not allow multiple sources" do
       run do
-        app.generate(@full_name)
-        app.build(@full_name)
-
-        stub_cache_read File.read("#{@full_name}/pkg/#{@release_name}.tar.gz")
-        FileUtils.rm_rf(@full_name)
-
-        stub_installer_read <<-HERE
-          {"file": "/foo/bar/#{@release_name}.tar.gz", "version": "#{@version}"}
-        HERE
-
-        app.explode
-
-        File.directory?("modules/#@module_name").should == true
-      end.should =~ /Installed #{@release_name.inspect}/
+        File.open("Modules", "w") do |handle|
+          handle.puts <<-EOF
+            source 'http://forge.puppetlabs.com'
+            source 'http://superforge.puppetlabs.com'
+          EOF
+        end
+        lambda { app.explode }.should raise_error(SystemExit)
+      end.should =~ /A source has already been defined/
     end
+
+
+    it "should compare module deps correctly" do
+      Puppet::Module::Tool::Dependency.new('puppet-apt').should == Puppet::Module::Tool::Dependency.new('puppet-apt')
+      Puppet::Module::Tool::Dependency.new('puppet-mysql').should_not == Puppet::Module::Tool::Dependency.new('puppet-apt')
+
+      Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0').should == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0')
+      Puppet::Module::Tool::Dependency.new('puppet-apt', '1.1').should_not == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0')
+
+      Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://forge.puppetlabs.com').should == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://forge.puppetlabs.com')
+      Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://forge.puppetlabs.com').should_not == Puppet::Module::Tool::Dependency.new('puppet-apt', '1.0', 'http://superforge.puppetlabs.com')
+    end
+
+    it "should allow the same module twice at the same version" do
+      run do
+        File.open("Modules", "w") do |handle|
+          handle.puts <<-EOF
+            source 'http://forge.puppetlabs.com'
+
+            mod 'puppet-apt'
+            mod 'puppet-apt'
+            mod 'puppet-mysql', '~> 0.3.1'
+            mod 'puppet-mysql', '~> 0.3.1'
+          EOF
+        end
+        app.explode
+      end.should be_empty
+    end
+
+    it "should not allow the same module twice at the different version" do
+      run do
+        File.open("Modules", "w") do |handle|
+          handle.puts <<-EOF
+            source 'http://forge.puppetlabs.com'
+
+            mod 'puppet-apt', '0.5'
+            mod 'puppet-apt', '0.6'
+          EOF
+        end
+        lambda { app.explode }.should raise_error(SystemExit)
+      end.should =~ /You can't include a module twice with different versions/
+    end
+
+
+#    it "should install all the modules" do
+#      run do
+#        app.generate(@full_name)
+#        app.build(@full_name)
+#
+#        stub_cache_read File.read("#{@full_name}/pkg/#{@release_name}.tar.gz")
+#        FileUtils.rm_rf(@full_name)
+#
+#        stub_installer_read <<-HERE
+#          {"file": "/foo/bar/#{@release_name}.tar.gz", "version": "#{@version}"}
+#        HERE
+#
+#        app.explode
+#
+#        File.directory?("modules/#@module_name").should == true
+#      end.should =~ /Installed #{@release_name.inspect}/
+#    end
   end
 end

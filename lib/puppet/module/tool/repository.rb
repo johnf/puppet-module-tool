@@ -15,7 +15,7 @@ module Puppet::Module::Tool
     # Instantiate a new repository instance rooted at the optional string
     # +url+, else an instance of the default Puppet modules repository.
     def initialize(url=Puppet::Module::Tool::REPOSITORY_URL)
-      @uri = normalize(url)
+      @uri = normalize(url || Puppet::Module::Tool::REPOSITORY_URL)
       @cache = Cache.new(self)
     end
 

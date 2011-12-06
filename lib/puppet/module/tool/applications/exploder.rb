@@ -57,7 +57,7 @@ module Puppet::Module::Tool
 
         dep = Dependency.new(name, version, @source)
 
-        if current = @modules.find { |m| m.full_name == dep.full_name } and current != dep
+        if (current = @modules.find { |m| m.full_name == dep.full_name }) and current != dep
           abort "You can't include a module twice with different versions or source\nYou included: #{current} and #{dep}."
         end
         @modules << dep
