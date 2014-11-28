@@ -15,7 +15,7 @@ module Puppet::Module::Tool
     # Instantiate a new repository instance rooted at the optional string
     # +url+, else an instance of the default Puppet modules repository.
     def initialize(url=Puppet::Module::Tool::REPOSITORY_URL)
-      @uri = normalize(url)
+      @uri = normalize(url || Puppet::Module::Tool::REPOSITORY_URL)
       @cache = Cache.new(self)
     end
 
@@ -56,7 +56,7 @@ module Puppet::Module::Tool
     # Return the local file name containing the data downloaded from the
     # repository at +release+ (e.g. "myuser-mymodule").
     def retrieve(release)
-      return cache.retrieve(@uri + release)
+      return cache.retrieve((@uri + release).to_s)
     end
 
     # Return the URI string for this repository.
